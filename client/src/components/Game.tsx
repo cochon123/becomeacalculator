@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { socketService } from '../services/socket';
+import { audioService } from '../services/audioService';
 import type { Question, AnswerSubmittedEvent, MatchFinishedEvent } from '../services/socket';
 
 interface GameProps {
@@ -33,8 +34,13 @@ export default function Game({ matchData, userId, onGameEnd }: GameProps) {
         setMyScore(data.newScore);
         setCurrentQuestionIndex(data.currentQuestion);
         
-        // Feedback visuel
+        // Feedback visuel et sonore
         setFeedback(data.correct ? 'correct' : 'incorrect');
+        if (data.correct) {
+          audioService.playCorrectAnswer();
+        } else {
+          audioService.playIncorrectAnswer();
+        }
         setTimeout(() => setFeedback(null), 600);
         setQuestionStartTime(Date.now());
       } else {
@@ -45,6 +51,14 @@ export default function Game({ matchData, userId, onGameEnd }: GameProps) {
     socketService.onMatchFinished((data: MatchFinishedEvent) => {
       setGameFinished(true);
       setWinner(data.winnerId);
+      // Play sound based on game result
+      if (data.winnerId === userId) {
+        audioService.playWinner();
+      } else if (data.winnerId !== null) {
+        audioService.playGameOver();
+      } else {
+        audioService.playGameOver();
+      }
     });
 
     return () => {
@@ -75,127 +89,78 @@ export default function Game({ matchData, userId, onGameEnd }: GameProps) {
     const isDraw = winner === null;
 
     return (
-      <div
-        style={{
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: isDraw ? '#FFC107' : iWon ? '#4CAF50' : '#f44336',
-          color: 'white',
-          textAlign: 'center',
-          transition: 'background-color 0.5s',
-        }}
-      >
-        <h1 style={{ fontSize: '60px', marginBottom: '20px' }}>
-          {isDraw ? '🤝 Égalité !' : iWon ? '🎉 Victoire !' : '😔 Défaite'}
-        </h1>
-        <div style={{ fontSize: '30px', marginBottom: '40px' }}>
-          <p>Ton score: {myScore}</p>
-          <p>Score de {matchData.opponent.username}: {opponentScore}</p>
+      <div className="app-container animate-fade-in" style={{ backgroundColor: isDraw ? 'var(--warning-color)' : iWon ? 'var(--success-color)' : 'var(--error-color)' }}>
+        <div className="card text-center" style={{ backgroundColor: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', border: 'none' }}>
+          <h1 style={{ fontSize: '4rem', marginBottom: '1rem' }}>
+            {isDraw ? '🤝 Égalité !' : iWon ? '🎉 Victoire !' : '😔 Défaite'}
+          </h1>
+          <div style={{ fontSize: '2rem', marginBottom: '2rem' }}>
+            <p>Ton score: <strong>{myScore}</strong></p>
+            <p>Score de {matchData.opponent.username}: <strong>{opponentScore}</strong></p>
+          </div>
+          <button
+            onClick={onGameEnd}
+            className="btn"
+            style={{ backgroundColor: 'white', color: 'black', fontSize: '1.2rem', padding: '1rem 2rem' }}
+          >
+            Retour au lobby
+          </button>
         </div>
-        <button
-          onClick={onGameEnd}
-          style={{
-            padding: '15px 40px',
-            fontSize: '20px',
-            backgroundColor: 'white',
-            color: '#333',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-          }}
-        >
-          Retour au lobby
-        </button>
       </div>
     );
   }
 
-  const bgColor = feedback === 'correct' ? '#4CAF50' : feedback === 'incorrect' ? '#f44336' : 'white';
-
   return (
-    <div
-      style={{
-        height: '100vh',
-        backgroundColor: bgColor,
-        transition: 'background-color 0.3s',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Header avec scores */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          padding: '20px',
-          backgroundColor: 'rgba(0,0,0,0.05)',
-        }}
-      >
-        <div>
-          <strong>Toi</strong>
-          <div style={{ fontSize: '24px' }}>⭐ {myScore}</div>
+    <div className="app-container" style={{ justifyContent: 'flex-start', paddingTop: '2rem' }}>
+      <div className="game-container">
+        {/* Header avec scores */}
+        <div className="score-board">
+          <div className="player-card active">
+            <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Toi</div>
+            <div className="score-value">{myScore}</div>
+          </div>
+          <div className="player-card">
+            <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{matchData.opponent.username}</div>
+            <div className="score-value" style={{ color: 'var(--text-secondary)' }}>{opponentScore}</div>
+          </div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div>Question {currentQuestionIndex + 1}/{matchData.questions.length}</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <strong>{matchData.opponent.username}</strong>
-          <div style={{ fontSize: '24px' }}>⭐ {opponentScore}</div>
-        </div>
-      </div>
 
-      {/* Question */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
+        <div className="text-center mb-4" style={{ color: 'var(--text-secondary)' }}>
+          Question {currentQuestionIndex + 1} / {matchData.questions.length}
+        </div>
+
+        {/* Question */}
         {currentQuestion && (
-          <>
-            <div style={{ fontSize: '80px', fontWeight: 'bold', marginBottom: '40px' }}>
-              {currentQuestion.a} {currentQuestion.op} {currentQuestion.b} = ?
+          <div className="question-card animate-slide-in">
+            {feedback && (
+              <div className={`feedback-overlay ${feedback === 'correct' ? 'feedback-correct' : 'feedback-incorrect'}`}>
+                {feedback === 'correct' ? '✓' : '✗'}
+              </div>
+            )}
+            
+            <div className="question-text mb-4">
+              {currentQuestion.a} {currentQuestion.op === '*' ? '×' : currentQuestion.op === '/' ? '÷' : currentQuestion.op} {currentQuestion.b}
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
+            <form onSubmit={handleSubmit}>
               <input
                 ref={inputRef}
                 type="number"
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Réponse"
-                style={{
-                  padding: '15px',
-                  fontSize: '30px',
-                  width: '200px',
-                  textAlign: 'center',
-                  border: '2px solid #ccc',
-                  borderRadius: '8px',
-                }}
+                placeholder="?"
+                className="input-field answer-input"
                 autoFocus
               />
               <button
                 type="submit"
-                style={{
-                  padding: '15px 30px',
-                  fontSize: '30px',
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                }}
+                className="btn btn-primary mt-4 w-full"
+                style={{ fontSize: '1.5rem' }}
               >
-                ✓
+                Valider
               </button>
             </form>
-          </>
+          </div>
         )}
       </div>
     </div>

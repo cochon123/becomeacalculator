@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './App.css';
 import Login from './components/Login';
 import Lobby from './components/Lobby';
 import Game from './components/Game';

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { socketService } from '../services/socket';
+import { audioService } from '../services/audioService';
 import Leaderboard from './Leaderboard';
 
 interface LobbyProps {
@@ -13,6 +14,9 @@ export default function Lobby({ user, onMatchFound, onLogout }: LobbyProps) {
   const [queueSize, setQueueSize] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [soundsEnabled, setSoundsEnabled] = useState(audioService.isSoundsEnabled());
+  const [volume, setVolume] = useState(audioService.getVolume());
+
 
   useEffect(() => {
     socketService.onQueueJoined((data) => {
@@ -65,131 +69,116 @@ export default function Lobby({ user, onMatchFound, onLogout }: LobbyProps) {
   }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '50px auto', padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <div>
-          <h2>👋 {user.username}</h2>
-          <p>ELO: {user.elo}</p>
-        </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => setShowLeaderboard(true)}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            🏆 Leaderboard
-          </button>
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#f44336',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Déconnexion
-          </button>
-        </div>
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <h1>🎮 Lobby</h1>
-        
-        {!inQueue ? (
-          <>
-            <button
-              onClick={handleJoinQueue}
-              style={{
-                padding: '20px 40px',
-                fontSize: '20px',
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                marginTop: '30px',
-              }}
-            >
-              🚀 Trouver un match
-            </button>
-
-            <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+    <div className="app-container">
+      <div className="card animate-fade-in" style={{ maxWidth: '800px', width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>👋 {user.username}</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>ELO: <span style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>{user.elo}</span></p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: 'var(--border-radius)' }}>
               <button
-                onClick={handleSoloTest}
-                disabled={loading}
-                style={{
-                  padding: '12px 30px',
-                  fontSize: '16px',
-                  backgroundColor: '#FF9800',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.6 : 1,
+                onClick={() => {
+                  const newState = audioService.toggleSounds();
+                  setSoundsEnabled(newState);
                 }}
-              >
-                🧪 {loading ? 'Chargement...' : 'Mode Test Solo'}
-              </button>
-              <button
-                onClick={() => setShowLeaderboard(true)}
                 style={{
-                  padding: '12px 30px',
-                  fontSize: '16px',
-                  backgroundColor: '#2196F3',
-                  color: 'white',
+                  backgroundColor: 'transparent',
                   border: 'none',
-                  borderRadius: '8px',
+                  color: soundsEnabled ? 'var(--accent-color)' : 'var(--text-secondary)',
+                  fontSize: '1.2rem',
                   cursor: 'pointer',
                 }}
+                title={soundsEnabled ? 'Désactiver les sons' : 'Activer les sons'}
               >
-                🏆 Voir le Leaderboard
+                {soundsEnabled ? '🔊' : '🔇'}
               </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={volume}
+                onChange={(e) => {
+                  const newVolume = parseFloat(e.target.value);
+                  setVolume(newVolume);
+                  audioService.setVolume(newVolume);
+                }}
+                disabled={!soundsEnabled}
+                style={{ width: '80px', cursor: soundsEnabled ? 'pointer' : 'not-allowed', opacity: soundsEnabled ? 1 : 0.5 }}
+                title="Volume"
+              />
             </div>
-          </>
-        ) : (
-          <div style={{ marginTop: '30px' }}>
-            <p style={{ fontSize: '18px' }}>⏳ Recherche d'un adversaire...</p>
-            <p>Joueurs en file: {queueSize}</p>
             <button
-              onClick={handleLeaveQueue}
-              style={{
-                padding: '10px 20px',
-                marginTop: '20px',
-                backgroundColor: '#ff9800',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
+              onClick={() => setShowLeaderboard(true)}
+              className="btn btn-secondary"
             >
-              Annuler
+              🏆 Leaderboard
+            </button>
+            <button
+              onClick={onLogout}
+              className="btn btn-danger"
+            >
+              Déconnexion
             </button>
           </div>
-        )}
+        </div>
 
-        <div style={{ marginTop: '50px', padding: '20px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
-          <h3>📋 Comment jouer ?</h3>
-          <ul style={{ textAlign: 'left', lineHeight: '1.8' }}>
-            <li>Résous des calculs mentaux le plus vite possible</li>
-            <li>Affronte un adversaire de niveau similaire (ELO)</li>
-            <li>La difficulté augmente au fil des questions</li>
-            <li style={{ color: '#4CAF50' }}>✅ Bonne réponse : <strong>+1 point</strong></li>
-            <li style={{ color: '#f44336' }}>❌ Mauvaise réponse : <strong>-1 point</strong></li>
-            <li>⚡ Le premier à finir termine la partie pour les deux</li>
-            <li>🏆 En cas d'égalité, le plus rapide gagne !</li>
-            <li style={{ marginTop: '10px', fontStyle: 'italic', color: '#666' }}>
-              💡 Utilise le mode test solo pour t'entraîner
-            </li>
-          </ul>
+        <div className="text-center">
+          <h1 className="logo-text">🎮 Lobby</h1>
+          
+          {!inQueue ? (
+            <div className="animate-slide-in">
+              <button
+                onClick={handleJoinQueue}
+                className="btn btn-primary"
+                style={{ fontSize: '1.2rem', padding: '1rem 2rem', width: '100%', maxWidth: '400px', marginBottom: '1rem' }}
+              >
+                🚀 Trouver un match
+              </button>
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleSoloTest}
+                  disabled={loading}
+                  className="btn btn-secondary"
+                  style={{ flex: '1 1 200px' }}
+                >
+                  🧪 {loading ? 'Chargement...' : 'Mode Test Solo'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="animate-fade-in" style={{ marginTop: '2rem' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '1rem', animation: 'pulse 2s infinite' }}>
+                ⏳ Recherche d'un adversaire...
+              </div>
+              <p style={{ color: 'var(--text-secondary)' }}>Joueurs en file: {queueSize}</p>
+              <button
+                onClick={handleLeaveQueue}
+                className="btn btn-secondary mt-4"
+              >
+                Annuler
+              </button>
+            </div>
+          )}
+
+          <div className="card mt-4" style={{ backgroundColor: 'rgba(0,0,0,0.2)', textAlign: 'left' }}>
+            <h3 className="mb-4" style={{ color: 'var(--accent-color)' }}>📋 Comment jouer ?</h3>
+            <ul style={{ lineHeight: '1.8', listStylePosition: 'inside' }}>
+              <li>Résous des calculs mentaux le plus vite possible</li>
+              <li>Affronte un adversaire de niveau similaire (ELO)</li>
+              <li>La difficulté augmente au fil des questions</li>
+              <li style={{ color: 'var(--success-color)' }}>✅ Bonne réponse : <strong>+1 point</strong></li>
+              <li style={{ color: 'var(--error-color)' }}>❌ Mauvaise réponse : <strong>-1 point</strong></li>
+              <li>⚡ Le premier à finir termine la partie pour les deux</li>
+              <li>🏆 En cas d'égalité, le plus rapide gagne !</li>
+              <li style={{ marginTop: '10px', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+                💡 Utilise le mode test solo pour t'entraîner
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

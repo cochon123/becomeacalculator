@@ -31,66 +31,64 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px' }}>
-      <h1 style={{ textAlign: 'center' }}>🧮 NoCalculator</h1>
-      <h2 style={{ textAlign: 'center' }}>{isRegister ? 'Inscription' : 'Connexion'}</h2>
+    <div className="app-container">
+      <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%' }}>
+        <h1 className="logo-text text-center">🧮 NoCalculator</h1>
+        <h2 className="text-center mb-4" style={{ color: 'var(--text-secondary)' }}>
+          {isRegister ? 'Inscription' : 'Connexion'}
+        </h2>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <input
-          type="text"
-          placeholder="Nom d'utilisateur"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={{ padding: '10px', fontSize: '16px' }}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ padding: '10px', fontSize: '16px' }}
-          required
-        />
-        
-        {error && <div style={{ color: 'red', textAlign: 'center' }}>{error}</div>}
+        <form onSubmit={handleSubmit} className="input-group">
+          <input
+            type="text"
+            className="input-field"
+            placeholder="Nom d'utilisateur"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            className="input-field"
+            placeholder="Mot de passe"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          
+          {error && <div style={{ color: 'var(--error-color)', textAlign: 'center', fontSize: '0.9rem' }}>{error}</div>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: '12px',
-            fontSize: '16px',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            borderRadius: '4px',
-          }}
-        >
-          {loading ? 'Chargement...' : isRegister ? "S'inscrire" : 'Se connecter'}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary mt-4"
+            style={{ width: '100%' }}
+          >
+            {loading ? 'Chargement...' : isRegister ? "S'inscrire" : 'Se connecter'}
+          </button>
+        </form>
 
-      <p style={{ textAlign: 'center', marginTop: '20px' }}>
-        {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}
-        <button
-          onClick={() => {
-            setIsRegister(!isRegister);
-            setError('');
-          }}
-          style={{
-            marginLeft: '5px',
-            background: 'none',
-            border: 'none',
-            color: '#2196F3',
-            cursor: 'pointer',
-            textDecoration: 'underline',
-          }}
-        >
-          {isRegister ? 'Se connecter' : "S'inscrire"}
-        </button>
-      </p>
+        <p className="text-center mt-4" style={{ color: 'var(--text-secondary)' }}>
+          {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}
+          <button
+            onClick={() => {
+              setIsRegister(!isRegister);
+              setError('');
+            }}
+            style={{
+              marginLeft: '5px',
+              background: 'none',
+              border: 'none',
+              color: 'var(--accent-color)',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              fontWeight: 'bold'
+            }}
+          >
+            {isRegister ? 'Se connecter' : "S'inscrire"}
+          </button>
+        </p>
+      </div>
     </div>
   );
 }

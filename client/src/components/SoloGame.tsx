@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
+import { audioService } from '../services/audioService';
 import type { Question } from '../services/socket';
 
 interface SoloGameProps {
@@ -40,8 +41,13 @@ export default function SoloGame({ matchData, onGameEnd }: SoloGameProps) {
     const currentQuestion = matchData.questions[currentQuestionIndex];
     const isCorrect = numAnswer === currentQuestion.answer;
 
-    // Feedback visuel
+    // Feedback visuel et sonore
     setFeedback(isCorrect ? 'correct' : 'incorrect');
+    if (isCorrect) {
+      audioService.playCorrectAnswer();
+    } else {
+      audioService.playIncorrectAnswer();
+    }
 
     if (isCorrect) {
       // Score basé sur la vitesse (max 100 points, min 10 points)
@@ -61,6 +67,7 @@ export default function SoloGame({ matchData, onGameEnd }: SoloGameProps) {
       if (currentQuestionIndex + 1 >= matchData.questions.length) {
         setTotalTime(Date.now() - startTime);
         setGameFinished(true);
+        audioService.playGameOver();
       } else {
         setCurrentQuestionIndex((prev) => prev + 1);
         setQuestionStartTime(Date.now());
@@ -75,40 +82,37 @@ export default function SoloGame({ matchData, onGameEnd }: SoloGameProps) {
     const avgTimePerQuestion = Math.round(totalTime / matchData.questions.length / 1000 * 10) / 10;
 
     return (
-      <div
-        style={{
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#1a1a2e',
-          color: 'white',
-        }}
-      >
-        <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>🏆 Test Terminé!</h1>
-        
-        <div style={{ fontSize: '24px', marginBottom: '30px', textAlign: 'center' }}>
-          <p>Score: <strong>{score}</strong> points</p>
-          <p>Bonnes réponses: <strong>{correctAnswers}</strong> / {matchData.questions.length}</p>
-          <p>Précision: <strong>{accuracy}%</strong></p>
-          <p>Temps moyen: <strong>{avgTimePerQuestion}s</strong> par question</p>
-        </div>
+      <div className="app-container animate-fade-in">
+        <div className="card text-center" style={{ maxWidth: '600px', width: '100%' }}>
+          <h1 style={{ fontSize: '3rem', marginBottom: '2rem' }}>🏆 Test Terminé!</h1>
+          
+          <div style={{ fontSize: '1.5rem', marginBottom: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="card" style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Score</div>
+              <div style={{ fontSize: '2rem', color: 'var(--accent-color)' }}>{score}</div>
+            </div>
+            <div className="card" style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Précision</div>
+              <div style={{ fontSize: '2rem', color: 'var(--success-color)' }}>{accuracy}%</div>
+            </div>
+            <div className="card" style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Bonnes réponses</div>
+              <div style={{ fontSize: '2rem' }}>{correctAnswers}/{matchData.questions.length}</div>
+            </div>
+            <div className="card" style={{ padding: '1rem', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Temps moyen</div>
+              <div style={{ fontSize: '2rem' }}>{avgTimePerQuestion}s</div>
+            </div>
+          </div>
 
-        <button
-          onClick={onGameEnd}
-          style={{
-            padding: '15px 40px',
-            fontSize: '20px',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-          }}
-        >
-          Retour au Lobby
-        </button>
+          <button
+            onClick={onGameEnd}
+            className="btn btn-primary"
+            style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}
+          >
+            Retour au Lobby
+          </button>
+        </div>
       </div>
     );
   }
@@ -124,114 +128,75 @@ export default function SoloGame({ matchData, onGameEnd }: SoloGameProps) {
   };
 
   return (
-    <div
-      style={{
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: feedback === 'correct' ? '#1b4332' : feedback === 'incorrect' ? '#5c1a1a' : '#1a1a2e',
-        color: 'white',
-        transition: 'background-color 0.3s ease',
-      }}
-    >
-      {/* Header */}
-      <div style={{ 
-        position: 'absolute', 
-        top: '20px', 
-        width: '100%', 
-        display: 'flex', 
-        justifyContent: 'center',
-        gap: '50px',
-        fontSize: '20px'
-      }}>
-        <div>
-          <span>Question: </span>
-          <strong>{currentQuestionIndex + 1}</strong>/{matchData.questions.length}
+    <div className="app-container" style={{ justifyContent: 'flex-start', paddingTop: '2rem' }}>
+      <div className="game-container">
+        {/* Header */}
+        <div className="score-board" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+          <div className="player-card">
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Question</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{currentQuestionIndex + 1}/{matchData.questions.length}</div>
+          </div>
+          <div className="player-card active">
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Score</div>
+            <div className="score-value">{score}</div>
+          </div>
+          <div className="player-card">
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Correct</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success-color)' }}>{correctAnswers}</div>
+          </div>
         </div>
-        <div>
-          <span>Score: </span>
-          <strong>{score}</strong>
+
+        {/* Question */}
+        <div className="question-card animate-slide-in">
+          {feedback && (
+            <div className={`feedback-overlay ${feedback === 'correct' ? 'feedback-correct' : 'feedback-incorrect'}`}>
+              {feedback === 'correct' ? '✓' : '✗'}
+            </div>
+          )}
+
+          <div className="question-text mb-4">
+            {currentQuestion.a} {getOperatorSymbol(currentQuestion.op)} {currentQuestion.b}
+          </div>
+
+          {/* Input */}
+          <form onSubmit={handleSubmit}>
+            <input
+              ref={inputRef}
+              type="number"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="?"
+              autoFocus
+              disabled={feedback !== null}
+              className="input-field answer-input"
+            />
+            <button
+              type="submit"
+              disabled={feedback !== null}
+              className="btn btn-primary mt-4 w-full"
+              style={{ fontSize: '1.5rem' }}
+            >
+              Valider
+            </button>
+          </form>
         </div>
-        <div>
-          <span>✓ </span>
-          <strong>{correctAnswers}</strong>
-        </div>
-      </div>
 
-      {/* Question */}
-      <div style={{ fontSize: '72px', marginBottom: '40px', fontWeight: 'bold' }}>
-        {currentQuestion.a} {getOperatorSymbol(currentQuestion.op)} {currentQuestion.b} = ?
-      </div>
-
-      {/* Input */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
-        <input
-          ref={inputRef}
-          type="number"
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          placeholder="Réponse"
-          autoFocus
-          disabled={feedback !== null}
-          style={{
-            fontSize: '36px',
-            padding: '15px 20px',
-            width: '200px',
-            textAlign: 'center',
-            borderRadius: '8px',
-            border: '2px solid #333',
-            backgroundColor: '#2a2a4a',
-            color: 'white',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={feedback !== null}
-          style={{
-            padding: '15px 30px',
-            fontSize: '24px',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: feedback !== null ? 'not-allowed' : 'pointer',
-            opacity: feedback !== null ? 0.7 : 1,
-          }}
-        >
-          ✓
-        </button>
-      </form>
-
-      {/* Feedback */}
-      {feedback && (
-        <div style={{ 
-          marginTop: '30px', 
-          fontSize: '32px',
-          animation: 'fadeIn 0.2s ease'
-        }}>
-          {feedback === 'correct' ? '✅ Correct!' : `❌ Faux! (${currentQuestion.answer})`}
-        </div>
-      )}
-
-      {/* Progress bar */}
-      <div style={{
-        position: 'absolute',
-        bottom: '30px',
-        width: '80%',
-        maxWidth: '600px',
-        height: '10px',
-        backgroundColor: '#333',
-        borderRadius: '5px',
-        overflow: 'hidden',
-      }}>
+        {/* Progress bar */}
         <div style={{
-          width: `${((currentQuestionIndex) / matchData.questions.length) * 100}%`,
-          height: '100%',
-          backgroundColor: '#4CAF50',
-          transition: 'width 0.3s ease',
-        }} />
+          width: '100%',
+          height: '8px',
+          backgroundColor: 'var(--bg-secondary)',
+          borderRadius: '4px',
+          overflow: 'hidden',
+          marginTop: '2rem'
+        }}>
+          <div style={{
+            width: `${((currentQuestionIndex) / matchData.questions.length) * 100}%`,
+            height: '100%',
+            backgroundColor: 'var(--accent-color)',
+            transition: 'width 0.3s ease',
+          }} />
+        </div>
       </div>
     </div>
   );

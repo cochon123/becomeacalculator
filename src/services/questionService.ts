@@ -84,10 +84,9 @@ function generateQuestion(
       break;
 
     case '*':
-      // Limiter pour éviter trop grands nombres
-      const mulMax = Math.min(maxNum, 20);
-      a = rng.range(2, mulMax);
-      b = rng.range(2, mulMax);
+      // Simplifier les multiplications : x <= 10, y <= 100
+      a = rng.range(2, 10);
+      b = rng.range(2, 100);
       answer = a * b;
       break;
 
