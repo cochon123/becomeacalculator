@@ -1,0 +1,82 @@
+# Apache configuration pour NoCalculator sur O2Switch
+# À placer dans le dossier public/ (frontend)
+
+RewriteEngine On
+RewriteBase /
+
+# ========================================
+# WEBSOCKET PROXY
+# ========================================
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
+
+# ========================================
+# API PROXY (vers Node.js backend)
+# ========================================
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
+
+# ========================================
+# SPA FALLBACK (pour React Router)
+# ========================================
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+# ========================================
+# COMPRESSION (gzip)
+# ========================================
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/xml
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/json
+  AddOutputFilterByType DEFLATE application/xml+rss
+  AddOutputFilterByType DEFLATE application/atom+xml
+
+  # Exclude already compressed files
+  SetEnvIfNoCase Request_URI \.(?:gif|zip|jpg|jpeg|png|avi|exe|gz|svgz)$ no-gzip dont-vary
+  SetEnvIfNoCase Request_URI \.svgz$ no-gzip
+</IfModule>
+
+# ========================================
+# CACHING
+# ========================================
+# Cache assets statiques (1 an)
+<FilesMatch "\.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$">
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+# Pas de cache pour HTML (réappeler à chaque rechargement)
+<FilesMatch "\.html?$">
+  Header set Cache-Control "public, max-age=0, must-revalidate"
+</FilesMatch>
+
+# ========================================
+# SECURITY
+# ========================================
+# Empêcher l'accès aux fichiers sensibles
+<FilesMatch "^\.env|package\.json|.*\.map$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
+
+# Désactiver la liste des répertoires
+Options -Indexes
+
+# HTTPS redirection (optionnel - laissez cPanel gérer)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ========================================
+# HEADERS
+# ========================================
+# Sécurité basique
+Header set X-Frame-Options "SAMEORIGIN"
+Header set X-Content-Type-Options "nosniff"
+Header set X-XSS-Protection "1; mode=block"
+Header set Referrer-Policy "strict-origin-when-cross-origin"

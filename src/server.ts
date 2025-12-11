@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import { createConnection, initDatabase, runMigrations } from './db/database';
 import { initializeWebSocket } from './socket/gameSocket';
 import authRoutes from './routes/auth';
 import leaderboardRoutes from './routes/leaderboard';
@@ -67,13 +68,27 @@ app.use('/api/test', testRoutes);
 // Initialiser WebSocket
 initializeWebSocket(server);
 
-// Démarrer le serveur
-server.listen(Number(PORT), HOST, () => {
-  console.log(`🚀 Serveur démarré sur http://${HOST}:${PORT}`);
-  console.log(`📊 Base de données: ${process.env.DATABASE_PATH || './data/nocalculator.db'}`);
-  console.log(`🎮 WebSocket prêt pour les matchs en temps réel`);
-  console.log(`🧪 Mode test: GET /api/test/solo pour tester le gameplay`);
-  console.log(`🌐 Accessible sur le réseau local: http://10.0.0.163:${PORT}`);
-});
+// Initialiser la base de données et démarrer le serveur
+async function start() {
+  try {
+    console.log('🔧 Initialisation de la base de données...');
+    await createConnection();
+    await initDatabase();
+    await runMigrations();
+
+    server.listen(Number(PORT), HOST, () => {
+      console.log(`🚀 Serveur démarré sur http://${HOST}:${PORT}`);
+      console.log(`🔗 Type de base: ${process.env.DATABASE_TYPE || 'sqlite'}`);
+      console.log(`🎮 WebSocket prêt pour les matchs en temps réel`);
+      console.log(`🧪 Mode test: GET /api/test/solo pour tester le gameplay`);
+      console.log(`🌐 Accessible sur le réseau local: http://10.0.0.163:${PORT}`);
+    });
+  } catch (error) {
+    console.error('❌ Erreur au démarrage:', error);
+    process.exit(1);
+  }
+}
+
+start();
 
 export default app;

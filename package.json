@@ -7,7 +7,10 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "db:init": "node dist/db/init.js"
+    "db:init": "node dist/db/schema.js",
+    "db:migrate": "node dist/db/migrations.js",
+    "db:reset": "NODE_ENV=development node -e \"require('./dist/db/migrations').resetDatabase().then(() => process.exit(0))\"",
+    "deploy": "bash scripts/deploy.sh"
   },
   "keywords": [
     "game",
@@ -26,6 +29,7 @@
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
     "socket.io": "^4.6.1",
     "uuid": "^13.0.0"
   },
@@ -37,6 +41,7 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.6",
+    "@types/pg": "^8.11.3",
     "@types/uuid": "^10.0.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"

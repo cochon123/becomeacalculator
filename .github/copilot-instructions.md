@@ -85,7 +85,11 @@ All game state lives on the server. Clients send only their answers; the server 
 | `client/src/App.tsx` | Main app state: screen routing (login/lobby/game/solo) |
 | `client/src/components/Game.tsx` | Multiplayer game UI with WebSocket listeners |
 | `client/src/components/SoloGame.tsx` | Solo mode local game (no WebSocket, local state) |
+| `client/src/components/Leaderboard.tsx` | Leaderboard display component |
+| `client/src/components/Lobby.tsx` | Main lobby screen with queue UI and stats |
+| `client/src/components/Login.tsx` | Login/registration forms |
 | `client/src/services/socket.ts` | Socket.io client wrapper, auto-detects server host |
+| `client/src/services/audioService.ts` | Audio effects management (correct/incorrect answers, game over, winner sounds) |
 
 ---
 
@@ -171,6 +175,19 @@ FRONTEND_URL=http://10.0.0.163:5173
 - Always cleanup listeners: `return () => { socketService.off(...) }` in useEffect
 - Pass `isSolo` flag through data to distinguish game modes
 
+### Audio Effects (AudioService)
+- **File**: `client/src/services/audioService.ts`
+- **Singleton**: `audioService` instance exported for app-wide use
+- **Features**:
+  - `playCorrectAnswer()`: Sound for correct answers (plusonepoint.mp3)
+  - `playIncorrectAnswer()`: Sound for incorrect answers (minusonepoint.mp3)
+  - `playGameOver()`: Sound when game ends (game-over-417465.mp3)
+  - `playWinner()`: Sound when player wins (winner-game-sound-404167.mp3)
+  - `setVolume(level)`: Set volume 0-1
+  - `toggleSounds()`: Enable/disable all sounds
+- **Initialization**: Audio context initialized on first user click/keydown (browser autoplay policy compliance)
+- **Usage**: Import and call methods like `audioService.playCorrectAnswer()` in game event handlers
+
 ---
 
 ## Debugging Checklist
@@ -199,6 +216,16 @@ FRONTEND_URL=http://10.0.0.163:5173
 - ✅ Server-authoritative: All game logic on server
 - ⚠️ Rate limiting: 100 req/15min per IP (tunable)
 - ⚠️ SQLite: No auth needed locally; use PostgreSQL for production
+
+---
+
+## Audio Assets
+- `client/src/assets/plusonepoint.mp3`: Correct answer sound effect
+- `client/src/assets/minusonepoint.mp3`: Incorrect answer sound effect
+- `client/src/assets/game-over-417465.mp3`: Game over sound effect
+- `client/src/assets/winner-game-sound-404167.mp3`: Winner sound effect
+
+**Pattern**: Import audio files at top of service, use `audioService` singleton to trigger sounds based on game events.
 
 ---
 
